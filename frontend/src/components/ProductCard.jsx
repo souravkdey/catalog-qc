@@ -5,13 +5,26 @@ function ProductCard({ product }) {
   const [stock, setStock] = useState(quantity);
 
   return (
-    <div style={{ border: "1px solid #ccc", padding: "16px", width: "250px" }}>
+    <div
+      style={{
+        border: "1px solid #ccc",
+        padding: "16px",
+        width: "250px",
+        opacity: stock === 0 ? 0.5 : 1,
+      }}
+    >
       <h3>{title}</h3>
       <p>
         <strong>SKU:</strong> {sku}
       </p>
       <p>
-        <strong>Quantity:</strong> {stock}
+        {stock === 0 ? (
+          "Out Of Stock"
+        ) : (
+          <>
+            <strong>Quantity:</strong> {stock}
+          </>
+        )}
       </p>
 
       <button onClick={() => setStock(stock + 1)}>+</button>
