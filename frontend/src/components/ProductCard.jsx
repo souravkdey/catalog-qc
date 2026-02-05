@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-function ProductCard({ title, sku, quantity }) {
+function ProductCard({ product }) {
+  const { title, sku, quantity } = product;
   const [stock, setStock] = useState(quantity);
 
   return (
