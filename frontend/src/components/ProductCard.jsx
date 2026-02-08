@@ -4,21 +4,24 @@ function ProductCard({ product }) {
   const { title, sku, quantity } = product;
   const [stock, setStock] = useState(quantity);
 
+  const isOutOfStock = stock === 0;
+
+  const cardClasses = `
+  rounded-sm p-4 w-48 shadow-md
+  hover:shadow-lg transition duration-300 shadow-xl/20
+  ${isOutOfStock ? "opacity-50" : ""}
+`;
+
   return (
-    <div
-      style={{
-        border: "1px solid #ccc",
-        padding: "16px",
-        width: "250px",
-        opacity: stock === 0 ? 0.5 : 1,
-      }}
-    >
+    <div className={cardClasses}>
       <h3>{title}</h3>
+
       <p>
         <strong>SKU:</strong> {sku}
       </p>
+
       <p>
-        {stock === 0 ? (
+        {isOutOfStock ? (
           "Out Of Stock"
         ) : (
           <>
@@ -28,14 +31,8 @@ function ProductCard({ product }) {
       </p>
 
       <button onClick={() => setStock(stock + 1)}>+</button>
-      <button
-        disabled={stock === 0}
-        onClick={() => {
-          if (stock > 0) {
-            setStock(stock - 1);
-          }
-        }}
-      >
+
+      <button disabled={isOutOfStock} onClick={() => setStock(stock - 1)}>
         -
       </button>
     </div>
