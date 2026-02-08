@@ -1,14 +1,30 @@
+import { useState } from "react";
+
 function ProductForm() {
+  const [skuError, setSkuError] = useState("");
+  const [sku, setSku] = useState("");
+
   return (
     <form>
       <div>
         <label htmlFor="sku">SKU</label>
-        <input id="sku" type="text" />
-      </div>
+        <input
+          id="sku"
+          type="text"
+          value={sku}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSku(value);
 
-      <div>
-        <label htmlFor="title">Title</label>
-        <input id="title" type="text" />
+            if (value === "") {
+              setSkuError("SKU is required");
+            } else {
+              setSkuError("");
+            }
+          }}
+        />
+        {skuError && <p style={{ color: "red" }}>{skuError}</p>}
+        <p>SKU typed: {sku}</p>
       </div>
 
       <div>

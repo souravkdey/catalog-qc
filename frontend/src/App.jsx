@@ -1,9 +1,10 @@
+import ProductForm from "./components/ProductForm";
 import ProductList from "./components/ProductList";
 
 function App() {
   return (
     <div>
-      <h1>Catalog</h1>
+      <ProductForm />
       <ProductList />
     </div>
   );
