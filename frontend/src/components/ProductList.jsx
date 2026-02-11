@@ -1,7 +1,28 @@
-import { products } from "../data/products";
+import axios from "axios";
+import { useEffect, useState } from "react";
 import ProductCard from "./ProductCard";
 
 function ProductList() {
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:3001/products")
+      .then((response) => {
+        setProducts(response.data);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.log(error);
+        setIsLoading(false);
+      });
+  }, []);
+
+  if (isLoading) {
+    return <h2>Loading...</h2>;
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6">
       <h2>Product List</h2>
