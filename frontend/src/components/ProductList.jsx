@@ -5,6 +5,7 @@ import ProductCard from "./ProductCard";
 function ProductList() {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     axios
@@ -16,8 +17,13 @@ function ProductList() {
       .catch((error) => {
         console.log(error);
         setIsLoading(false);
+        setError(error.message);
       });
   }, []);
+
+  if (error) {
+    return <h2>{error}</h2>;
+  }
 
   if (isLoading) {
     return <h2>Loading...</h2>;
