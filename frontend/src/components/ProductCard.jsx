@@ -1,42 +1,89 @@
 import { useState } from "react";
 
-function ProductCard({ product }) {
-  const { title, sku, quantity } = product;
-  const [stock, setStock] = useState(quantity);
+export default function ProductCard({ product, onEdit, onDelete }) {
+  const [editMode, setEditMode] = useState(false);
+  const [editTitle, setEditTitle] = useState(product.title);
+  const [editQuantity, setEditQuantity] = useState(product.quantity);
+  const [editSku, setEditSku] = useState(product.sku);
 
-  const isOutOfStock = stock === 0;
+  const isOutOfStock = editQuantity === 0;
 
-  const cardClasses = `
-  rounded-sm p-4 w-48 shadow-md
-  hover:shadow-lg transition duration-300 shadow-xl/20
-  ${isOutOfStock ? "opacity-50" : ""}
-`;
+  const handleSave = () => {
+    onEdit({
+      id: product.id,
+      title: editTitle,
+      quantity: editQuantity,
+      sku: editSku,
+    });
+    setEditMode(false);
+  };
 
   return (
-    <div className={cardClasses}>
-      <h3>{title}</h3>
-
-      <p>
-        <strong>SKU:</strong> {sku}
-      </p>
-
-      <p>
-        {isOutOfStock ? (
-          "Out Of Stock"
-        ) : (
-          <>
-            <strong>Quantity:</strong> {stock}
-          </>
-        )}
-      </p>
-
-      <button onClick={() => setStock(stock + 1)}>+</button>
-
-      <button disabled={isOutOfStock} onClick={() => setStock(stock - 1)}>
-        -
-      </button>
+    <div
+      className={`rounded p-4 shadow-md ${isOutOfStock ? "opacity-50" : ""}`}
+    >
+      {editMode ? (
+        <>
+          <input
+            type="text"
+            value={editSku}
+            onChange={(e) => setEditSku(e.target.value)}
+            className="border p-1 mb-1 w-full"
+          />
+          <input
+            type="text"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            className="border p-1 mb-1 w-full"
+          />
+          <input
+            type="number"
+            min={0}
+            value={editQuantity}
+            onChange={(e) => setEditQuantity(Number(e.target.value))}
+            className="border p-1 mb-2 w-full"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              className="bg-blue-500 text-white px-2 py-1 rounded"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => setEditMode(false)}
+              className="bg-gray-300 px-2 py-1 rounded"
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <h3>{product.title}</h3>
+          <p>
+            <strong>SKU:</strong> {product.sku}
+          </p>
+          <p>
+            <strong>Quantity:</strong>{" "}
+            {isOutOfStock ? "Out of Stock" : editQuantity}
+          </p>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => setEditMode(true)}
+              className="bg-yellow-300 px-2 py-1 rounded"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => onDelete(product.id)}
+              className="bg-red-500 text-white px-2 py-1 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
-
-export default ProductCard;
