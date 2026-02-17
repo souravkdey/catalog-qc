@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function ProductCard({ product, onEdit, onDelete }) {
   const [editMode, setEditMode] = useState(false);
@@ -6,15 +6,31 @@ export default function ProductCard({ product, onEdit, onDelete }) {
   const [editQuantity, setEditQuantity] = useState(product.quantity);
   const [editSku, setEditSku] = useState(product.sku);
 
-  const isOutOfStock = editQuantity === 0;
+  const isOutOfStock = product.quantity === 0;
+
+  // Sync local state if product changes externally
+  useEffect(() => {
+    setEditTitle(product.title);
+    setEditQuantity(product.quantity);
+    setEditSku(product.sku);
+  }, [product]);
 
   const handleSave = () => {
+    const trimmedTitle = editTitle.trim();
+    const trimmedSku = editSku.trim();
+    const numericQuantity = Number(editQuantity);
+
+    if (!trimmedTitle || !trimmedSku || numericQuantity < 0) {
+      return;
+    }
+
     onEdit({
       id: product.id,
-      title: editTitle,
-      quantity: editQuantity,
-      sku: editSku,
+      title: trimmedTitle,
+      quantity: numericQuantity,
+      sku: trimmedSku,
     });
+
     setEditMode(false);
   };
 
@@ -30,19 +46,22 @@ export default function ProductCard({ product, onEdit, onDelete }) {
             onChange={(e) => setEditSku(e.target.value)}
             className="border p-1 mb-1 w-full"
           />
+
           <input
             type="text"
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             className="border p-1 mb-1 w-full"
           />
+
           <input
             type="number"
             min={0}
             value={editQuantity}
-            onChange={(e) => setEditQuantity(Number(e.target.value))}
+            onChange={(e) => setEditQuantity(e.target.value)}
             className="border p-1 mb-2 w-full"
           />
+
           <div className="flex gap-2">
             <button
               onClick={handleSave}
@@ -50,6 +69,7 @@ export default function ProductCard({ product, onEdit, onDelete }) {
             >
               Save
             </button>
+
             <button
               onClick={() => setEditMode(false)}
               className="bg-gray-300 px-2 py-1 rounded"
@@ -61,13 +81,16 @@ export default function ProductCard({ product, onEdit, onDelete }) {
       ) : (
         <>
           <h3>{product.title}</h3>
+
           <p>
             <strong>SKU:</strong> {product.sku}
           </p>
+
           <p>
             <strong>Quantity:</strong>{" "}
-            {isOutOfStock ? "Out of Stock" : editQuantity}
+            {isOutOfStock ? "Out of Stock" : product.quantity}
           </p>
+
           <div className="flex gap-2 mt-2">
             <button
               onClick={() => setEditMode(true)}
@@ -75,6 +98,7 @@ export default function ProductCard({ product, onEdit, onDelete }) {
             >
               Edit
             </button>
+
             <button
               onClick={() => onDelete(product.id)}
               className="bg-red-500 text-white px-2 py-1 rounded"
