@@ -1,21 +1,46 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const jwt = require("jsonwebtoken");
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
+// Authentication middleware
+const authenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid or expired token" });
+  }
+};
+
 // In-memory database
 let products = [{ id: 1, title: "abc", sku: "SKU001", quantity: 20 }];
+
 let nextId = 2;
 
 // Helpers
 const validateProduct = (data) => {
+  if (!data) return false;
+
   return (
     typeof data.title === "string" &&
     data.title.trim() !== "" &&
@@ -43,6 +68,26 @@ app.get("/", (req, res) => {
       delete: "DELETE /products/:id",
     },
   });
+});
+
+// Login route
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+
+  if (username !== "admin" || password !== "1234") {
+    return res.status(401).json({ message: "Invalid credentials" });
+  }
+
+  const token = jwt.sign(
+    {
+      username: "admin",
+      role: "admin",
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1h" }
+  );
+
+  res.json({ token });
 });
 
 // GET all (pagination)
@@ -84,7 +129,7 @@ app.get("/products/:id", (req, res) => {
 });
 
 // POST create
-app.post("/products", (req, res) => {
+app.post("/products", authenticate, (req, res) => {
   if (!validateProduct(req.body)) {
     return res.status(400).json({ message: "Invalid product data" });
   }
@@ -108,7 +153,7 @@ app.post("/products", (req, res) => {
 });
 
 // PUT update
-app.put("/products/:id", (req, res) => {
+app.put("/products/:id", authenticate, (req, res) => {
   const id = parseInt(req.params.id, 10);
 
   if (!validateId(id)) {
@@ -139,7 +184,7 @@ app.put("/products/:id", (req, res) => {
 });
 
 // DELETE
-app.delete("/products/:id", (req, res) => {
+app.delete("/products/:id", authenticate, (req, res) => {
   const id = parseInt(req.params.id, 10);
 
   if (!validateId(id)) {
@@ -166,6 +211,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Internal Server Error" });
 });
 
+// Start server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
