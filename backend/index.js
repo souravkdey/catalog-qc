@@ -1,10 +1,16 @@
+// Load environment variables
 require("dotenv").config();
 
+// Core dependencies
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const jwt = require("jsonwebtoken");
 
+// Database
+const connectDB = require("./config/db");
+
+// Initialize app
 const app = express();
 const port = process.env.PORT || 3001;
 
@@ -27,17 +33,16 @@ const authenticate = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
-  } catch (err) {
+  } catch (error) {
     return res.status(403).json({ message: "Invalid or expired token" });
   }
 };
 
-// In-memory database
+// In-memory data store
 let products = [{ id: 1, title: "abc", sku: "SKU001", quantity: 20 }];
-
 let nextId = 2;
 
-// Helpers
+// Validation helpers
 const validateProduct = (data) => {
   if (!data) return false;
 
@@ -79,10 +84,7 @@ app.post("/login", (req, res) => {
   }
 
   const token = jwt.sign(
-    {
-      username: "admin",
-      role: "admin",
-    },
+    { username: "admin", role: "admin" },
     process.env.JWT_SECRET,
     { expiresIn: "1h" }
   );
@@ -90,7 +92,7 @@ app.post("/login", (req, res) => {
   res.json({ token });
 });
 
-// GET all (pagination)
+// Get all products (pagination)
 app.get("/products", (req, res) => {
   let { page = 1, limit = 10 } = req.query;
 
@@ -111,7 +113,7 @@ app.get("/products", (req, res) => {
   });
 });
 
-// GET by ID
+// Get product by ID
 app.get("/products/:id", (req, res) => {
   const id = parseInt(req.params.id, 10);
 
@@ -128,7 +130,7 @@ app.get("/products/:id", (req, res) => {
   res.json(product);
 });
 
-// POST create
+// Create product
 app.post("/products", authenticate, (req, res) => {
   if (!validateProduct(req.body)) {
     return res.status(400).json({ message: "Invalid product data" });
@@ -152,7 +154,7 @@ app.post("/products", authenticate, (req, res) => {
   res.status(201).json(newProduct);
 });
 
-// PUT update
+// Update product
 app.put("/products/:id", authenticate, (req, res) => {
   const id = parseInt(req.params.id, 10);
 
@@ -183,7 +185,7 @@ app.put("/products/:id", authenticate, (req, res) => {
   res.json(product);
 });
 
-// DELETE
+// Delete product
 app.delete("/products/:id", authenticate, (req, res) => {
   const id = parseInt(req.params.id, 10);
 
@@ -211,7 +213,18 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Internal Server Error" });
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+// Start server after DB connection
+const startServer = async () => {
+  try {
+    await connectDB();
+
+    app.listen(port, () => {
+      console.log(`Server running at http://localhost:${port}`);
+    });
+  } catch (error) {
+    console.error("Startup failed:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
