@@ -1,25 +1,26 @@
-// Load environment variables
+// env config
 require("dotenv").config();
 
-// Core dependencies
+// deps
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const jwt = require("jsonwebtoken");
 
-// Database
+// internal modules
 const connectDB = require("./config/db");
+const Product = require("./models/Product");
 
-// Initialize app
+// app init
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Middleware
+// middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-// Authentication middleware
+// auth middleware
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -27,55 +28,26 @@ const authenticate = (req, res, next) => {
     return res.status(401).json({ message: "No token provided" });
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader.split(" ")[1]; // "Bearer <token>"
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    req.user = decoded; // attach user to request
     next();
   } catch (error) {
     return res.status(403).json({ message: "Invalid or expired token" });
   }
 };
 
-// In-memory data store
-let products = [{ id: 1, title: "abc", sku: "SKU001", quantity: 20 }];
-let nextId = 2;
-
-// Validation helpers
-const validateProduct = (data) => {
-  if (!data) return false;
-
-  return (
-    typeof data.title === "string" &&
-    data.title.trim() !== "" &&
-    typeof data.sku === "string" &&
-    data.sku.trim() !== "" &&
-    typeof data.quantity === "number" &&
-    data.quantity >= 0
-  );
-};
-
-const validateId = (id) => {
-  return Number.isInteger(id) && id > 0;
-};
-
-// Root route
+// root route
 app.get("/", (req, res) => {
   res.json({
     message: "Product API is running 🚀",
     version: "1.0.0",
-    endpoints: {
-      getAll: "GET /products",
-      getOne: "GET /products/:id",
-      create: "POST /products",
-      update: "PUT /products/:id",
-      delete: "DELETE /products/:id",
-    },
   });
 });
 
-// Login route
+// login (temporary hardcoded)
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
@@ -92,128 +64,114 @@ app.post("/login", (req, res) => {
   res.json({ token });
 });
 
-// Get all products (pagination)
-app.get("/products", (req, res) => {
-  let { page = 1, limit = 10 } = req.query;
+// get products (public, active only, paginated)
+app.get("/products", async (req, res) => {
+  try {
+    let { page = 1, limit = 10 } = req.query;
 
-  page = parseInt(page, 10);
-  limit = parseInt(limit, 10);
+    page = parseInt(page, 10);
+    limit = parseInt(limit, 10);
 
-  if (!validateId(page) || !validateId(limit)) {
-    return res.status(400).json({ message: "Invalid pagination values" });
+    if (page < 1 || limit < 1) {
+      return res.status(400).json({ message: "Invalid pagination values" });
+    }
+
+    const skip = (page - 1) * limit;
+
+    const data = await Product.find({ status: "active" })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Product.countDocuments({ status: "active" });
+
+    res.json({ total, page, limit, data });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
-
-  const start = (page - 1) * limit;
-
-  res.json({
-    total: products.length,
-    page,
-    limit,
-    data: products.slice(start, start + limit),
-  });
 });
 
-// Get product by ID
-app.get("/products/:id", (req, res) => {
-  const id = parseInt(req.params.id, 10);
+// create product (protected)
+app.post("/products", authenticate, async (req, res) => {
+  try {
+    const product = await Product.create(req.body);
+    return res.status(201).json(product);
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "SKU Already Exists" }); // duplicate
+    }
 
-  if (!validateId(id)) {
-    return res.status(400).json({ message: "Invalid product ID" });
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message }); // schema fail
+    }
+
+    return res.status(500).json({ message: "Unknown Error" });
   }
-
-  const product = products.find((p) => p.id === id);
-
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
-  }
-
-  res.json(product);
 });
 
-// Create product
-app.post("/products", authenticate, (req, res) => {
-  if (!validateProduct(req.body)) {
-    return res.status(400).json({ message: "Invalid product data" });
+// update product (protected)
+app.put("/products/:id", authenticate, async (req, res) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true } // return updated + validate
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    return res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.log(error.message);
+
+    if (error.name === "CastError") {
+      return res.status(400).json({ message: "Invalid product ID" });
+    }
+
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "SKU Already Exists" });
+    }
+
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: "Unknown Error" });
   }
-
-  const sku = req.body.sku.trim();
-
-  if (products.find((p) => p.sku === sku)) {
-    return res.status(409).json({ message: "SKU already exists" });
-  }
-
-  const newProduct = {
-    id: nextId++,
-    title: req.body.title.trim(),
-    sku,
-    quantity: req.body.quantity,
-  };
-
-  products.push(newProduct);
-
-  res.status(201).json(newProduct);
 });
 
-// Update product
-app.put("/products/:id", authenticate, (req, res) => {
-  const id = parseInt(req.params.id, 10);
+// soft delete (protected)
+app.delete("/products/:id", authenticate, async (req, res) => {
+  try {
+    const archivedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      { status: "archived" }, // soft delete
+      { new: true }
+    );
 
-  if (!validateId(id)) {
-    return res.status(400).json({ message: "Invalid product ID" });
+    if (!archivedProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    return res.status(200).json({ message: "Product deleted" });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ message: "Invalid product ID" });
+    }
+
+    return res.status(500).json({ message: "Unknown Error" });
   }
-
-  const product = products.find((p) => p.id === id);
-
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
-  }
-
-  if (!validateProduct(req.body)) {
-    return res.status(400).json({ message: "Invalid product data" });
-  }
-
-  const sku = req.body.sku.trim();
-
-  if (products.find((p) => p.sku === sku && p.id !== id)) {
-    return res.status(409).json({ message: "SKU already exists" });
-  }
-
-  product.title = req.body.title.trim();
-  product.sku = sku;
-  product.quantity = req.body.quantity;
-
-  res.json(product);
 });
 
-// Delete product
-app.delete("/products/:id", authenticate, (req, res) => {
-  const id = parseInt(req.params.id, 10);
-
-  if (!validateId(id)) {
-    return res.status(400).json({ message: "Invalid product ID" });
-  }
-
-  const index = products.findIndex((p) => p.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({ message: "Product not found" });
-  }
-
-  const removed = products.splice(index, 1);
-
-  res.json({
-    message: "Product deleted",
-    product: removed[0],
-  });
-});
-
-// Global error handler
+// global error handler (fallback)
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: "Internal Server Error" });
 });
 
-// Start server after DB connection
+// start server after DB connects
 const startServer = async () => {
   try {
     await connectDB();
