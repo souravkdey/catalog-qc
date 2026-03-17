@@ -64,27 +64,49 @@ app.post("/login", (req, res) => {
   res.json({ token });
 });
 
-// get products (public, active only, paginated)
+// get products (public paginated)
 app.get("/products", async (req, res) => {
   try {
-    let { page = 1, limit = 10 } = req.query;
+    let { page = "1", limit = "10", status } = req.query;
 
+    // Convert to numbers
     page = parseInt(page, 10);
     limit = parseInt(limit, 10);
 
-    if (page < 1 || limit < 1) {
+    // Validate numbers
+    if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
       return res.status(400).json({ message: "Invalid pagination values" });
     }
 
+    // Prevent abuse (limit cap)
+    limit = Math.min(limit, 50);
+
     const skip = (page - 1) * limit;
 
-    const data = await Product.find({ status: "active" })
-      .skip(skip)
-      .limit(limit);
+    // Allowed status values
+    const allowedStatus = ["active", "inactive"];
 
-    const total = await Product.countDocuments({ status: "active" });
+    const filter = {};
 
-    res.json({ total, page, limit, data });
+    if (status && status.trim() !== "") {
+      if (!allowedStatus.includes(status)) {
+        return res.status(400).json({ message: "Invalid status value" });
+      }
+      filter.status = status;
+    } else {
+      filter.status = "active"; // default
+    }
+
+    const data = await Product.find(filter).skip(skip).limit(limit);
+
+    const total = await Product.countDocuments(filter);
+
+    res.json({
+      total,
+      page,
+      limit,
+      data,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
