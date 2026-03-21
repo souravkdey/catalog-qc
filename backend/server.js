@@ -2,6 +2,8 @@
 require("dotenv").config();
 
 // deps
+const getChanges = require("./utils/getChanges");
+const createLog = require("./utils/createLog");
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
@@ -10,6 +12,7 @@ const jwt = require("jsonwebtoken");
 // internal modules
 const connectDB = require("./config/db");
 const Product = require("./models/Product");
+const Log = require("./models/Log"); // added
 
 // app init
 const app = express();
@@ -28,11 +31,11 @@ const authenticate = (req, res, next) => {
     return res.status(401).json({ message: "No token provided" });
   }
 
-  const token = authHeader.split(" ")[1]; // "Bearer <token>"
+  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // attach user to request
+    req.user = decoded;
     next();
   } catch (error) {
     return res.status(403).json({ message: "Invalid or expired token" });
@@ -69,23 +72,17 @@ app.get("/products", async (req, res) => {
   try {
     let { page = "1", limit = "10", status } = req.query;
 
-    // Convert to numbers
     page = parseInt(page, 10);
     limit = parseInt(limit, 10);
 
-    // Validate numbers
     if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
       return res.status(400).json({ message: "Invalid pagination values" });
     }
 
-    // Prevent abuse (limit cap)
     limit = Math.min(limit, 50);
-
     const skip = (page - 1) * limit;
 
-    // Allowed status values
     const allowedStatus = ["active", "inactive"];
-
     const filter = {};
 
     if (status && status.trim() !== "") {
@@ -94,19 +91,13 @@ app.get("/products", async (req, res) => {
       }
       filter.status = status;
     } else {
-      filter.status = "active"; // default
+      filter.status = "active";
     }
 
     const data = await Product.find(filter).skip(skip).limit(limit);
-
     const total = await Product.countDocuments(filter);
 
-    res.json({
-      total,
-      page,
-      limit,
-      data,
-    });
+    res.json({ total, page, limit, data });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -117,14 +108,27 @@ app.get("/products", async (req, res) => {
 app.post("/products", authenticate, async (req, res) => {
   try {
     const product = await Product.create(req.body);
+
+    // ✅ log CREATE
+    try {
+      await createLog({
+        action: "CREATE",
+        productId: product._id,
+        before: null,
+        after: product.toObject(),
+      });
+    } catch (err) {
+      console.error("Log failed:", err.message);
+    }
+
     return res.status(201).json(product);
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(409).json({ message: "SKU Already Exists" }); // duplicate
+      return res.status(409).json({ message: "SKU Already Exists" });
     }
 
     if (error.name === "ValidationError") {
-      return res.status(400).json({ message: error.message }); // schema fail
+      return res.status(400).json({ message: error.message });
     }
 
     return res.status(500).json({ message: "Unknown Error" });
@@ -134,14 +138,33 @@ app.post("/products", authenticate, async (req, res) => {
 // update product (protected)
 app.put("/products/:id", authenticate, async (req, res) => {
   try {
+    const oldProduct = await Product.findById(req.params.id);
+
+    if (!oldProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true, runValidators: true } // return updated + validate
+      { new: true, runValidators: true }
     );
 
-    if (!updatedProduct) {
-      return res.status(404).json({ message: "Product not found" });
+    const changes = getChanges(
+      oldProduct.toObject(),
+      updatedProduct.toObject()
+    );
+
+    // ✅ log UPDATE
+    try {
+      await createLog({
+        action: "UPDATE",
+        productId: updatedProduct._id,
+        before: changes.before,
+        after: changes.after,
+      });
+    } catch (err) {
+      console.error("Log failed:", err.message);
     }
 
     return res.status(200).json(updatedProduct);
@@ -167,14 +190,26 @@ app.put("/products/:id", authenticate, async (req, res) => {
 // soft delete (protected)
 app.delete("/products/:id", authenticate, async (req, res) => {
   try {
-    const archivedProduct = await Product.findByIdAndUpdate(
-      req.params.id,
-      { status: "archived" }, // soft delete
-      { new: true }
-    );
+    const productToDelete = await Product.findById(req.params.id);
 
-    if (!archivedProduct) {
+    if (!productToDelete) {
       return res.status(404).json({ message: "Product not found" });
+    }
+
+    await Product.findByIdAndUpdate(req.params.id, {
+      status: "archived",
+    });
+
+    // ✅ log DELETE
+    try {
+      await createLog({
+        action: "DELETE",
+        productId: productToDelete._id,
+        before: productToDelete.toObject(),
+        after: null,
+      });
+    } catch (err) {
+      console.error("Log failed:", err.message);
     }
 
     return res.status(200).json({ message: "Product deleted" });
@@ -187,7 +222,17 @@ app.delete("/products/:id", authenticate, async (req, res) => {
   }
 });
 
-// global error handler (fallback)
+// ✅ logs endpoint (protected)
+app.get("/logs", authenticate, async (req, res) => {
+  try {
+    const logs = await Log.find().sort({ createdAt: -1 });
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: "Internal Server Error" });
