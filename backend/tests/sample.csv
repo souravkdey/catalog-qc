@@ -1,0 +1,5 @@
+sku,title,variant_name,variant_price,variant_quantity,status
+prod-001,T-Shirt,Small,10,100,active
+prod-001,T-Shirt,Medium,12,80,active
+prod-001,T-Shirt,Large,15,50,active
+prod-002,Cap,Standard,8,200,draft
