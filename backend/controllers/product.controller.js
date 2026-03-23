@@ -1,8 +1,21 @@
 const Product = require("../models/Product");
 const getChanges = require("../utils/getChanges");
 const createLog = require("../utils/createLog");
+const parseCSV = require("../utils/parseCSV");
 
-// GET PRODUCTS
+const MAX_LIMIT = 50;
+const ALLOWED_STATUS = ["active", "inactive"];
+
+const handleServerError = (res, error, message = "Unknown Error") => {
+  console.error(error);
+  res.status(500).json({ message });
+};
+
+const toNumber = (value, fallback = 0) => {
+  const num = Number(value);
+  return isNaN(num) ? fallback : num;
+};
+
 exports.getProducts = async (req, res) => {
   try {
     let { page = "1", limit = "10", status } = req.query;
@@ -14,14 +27,14 @@ exports.getProducts = async (req, res) => {
       return res.status(400).json({ message: "Invalid pagination values" });
     }
 
-    limit = Math.min(limit, 50);
+    limit = Math.min(limit, MAX_LIMIT);
     const skip = (page - 1) * limit;
 
-    const allowedStatus = ["active", "inactive"];
     const filter = {};
 
+    // default to active if status not provided
     if (status && status.trim() !== "") {
-      if (!allowedStatus.includes(status)) {
+      if (!ALLOWED_STATUS.includes(status)) {
         return res.status(400).json({ message: "Invalid status value" });
       }
       filter.status = status;
@@ -29,16 +42,17 @@ exports.getProducts = async (req, res) => {
       filter.status = "active";
     }
 
-    const data = await Product.find(filter).skip(skip).limit(limit);
-    const total = await Product.countDocuments(filter);
+    const [data, total] = await Promise.all([
+      Product.find(filter).skip(skip).limit(limit),
+      Product.countDocuments(filter),
+    ]);
 
     res.json({ total, page, limit, data });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+    handleServerError(res, error, "Internal server error");
   }
 };
 
-// CREATE
 exports.createProduct = async (req, res) => {
   try {
     const product = await Product.create(req.body);
@@ -60,11 +74,10 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ message: error.message });
     }
 
-    res.status(500).json({ message: "Unknown Error" });
+    handleServerError(res, error);
   }
 };
 
-// UPDATE
 exports.updateProduct = async (req, res) => {
   try {
     const oldProduct = await Product.findById(req.params.id);
@@ -91,7 +104,7 @@ exports.updateProduct = async (req, res) => {
       after: changes.after,
     });
 
-    res.status(200).json(updatedProduct);
+    res.json(updatedProduct);
   } catch (error) {
     if (error.name === "CastError") {
       return res.status(400).json({ message: "Invalid product ID" });
@@ -105,11 +118,10 @@ exports.updateProduct = async (req, res) => {
       return res.status(400).json({ message: error.message });
     }
 
-    res.status(500).json({ message: "Unknown Error" });
+    handleServerError(res, error);
   }
 };
 
-// DELETE
 exports.deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -118,6 +130,7 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    // soft delete by marking status as archived
     await Product.findByIdAndUpdate(req.params.id, {
       status: "archived",
     });
@@ -135,6 +148,40 @@ exports.deleteProduct = async (req, res) => {
       return res.status(400).json({ message: "Invalid product ID" });
     }
 
-    res.status(500).json({ message: "Unknown Error" });
+    handleServerError(res, error);
+  }
+};
+
+exports.uploadCSV = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const data = await parseCSV(req.file.path);
+
+    const products = data.map((item) => ({
+      title: item.title,
+      sku: item.sku,
+      price: toNumber(item.price),
+      category: item.category,
+      variants: [
+        {
+          name: item.variantName || "Default",
+          price: toNumber(item.variantPrice, toNumber(item.price)),
+          quantity: toNumber(item.quantity, 0),
+        },
+      ],
+    }));
+
+    await Product.insertMany(products);
+
+    res.status(201).json({
+      message: "CSV uploaded successfully",
+      count: products.length,
+    });
+  } catch (error) {
+    console.error("CSV UPLOAD ERROR:", error);
+    handleServerError(res, error, "CSV upload failed");
   }
 };
