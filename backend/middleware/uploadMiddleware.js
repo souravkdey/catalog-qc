@@ -1,17 +1,17 @@
 const multer = require("multer");
 
-// configure storage
+const destinationPath = "uploads/";
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); // where files go
+    cb(null, destinationPath);
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
+    const uniqueName = Date.now() + "-" + file.originalname;
+    cb(null, uniqueName);
   },
 });
 
-// create upload instance
 const upload = multer({ storage });
 
-// export it
 module.exports = upload;

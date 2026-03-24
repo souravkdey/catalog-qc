@@ -2,7 +2,7 @@ const Log = require("../models/Log");
 
 async function createLog({ action, productId, before = null, after = null }) {
   try {
-    if (!action || !productId) return; // ensure required fields
+    if (!action || !productId) return;
 
     await Log.create({
       action,
@@ -13,7 +13,7 @@ async function createLog({ action, productId, before = null, after = null }) {
       },
     });
   } catch (err) {
-    console.error("Log error:", err.message); // log only message
+    console.error("Log error:", err.message);
   }
 }
 

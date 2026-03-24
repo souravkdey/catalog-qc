@@ -21,11 +21,10 @@ const logSchema = new mongoose.Schema(
 
     changes: {
       type: Object,
-      // TODO: think — should this be required?
     },
   },
   {
-    timestamps: true, // automatically adds createdAt
+    timestamps: true,
   }
 );
 

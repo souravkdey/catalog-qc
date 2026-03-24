@@ -30,7 +30,10 @@ const validateProduct = (product) => {
     errors.push("SKU is required and must be a non-empty string");
   }
 
-  return { isValid: errors.length === 0, errors };
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
 };
 
 module.exports = validateProduct;

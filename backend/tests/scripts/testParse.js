@@ -1,5 +1,5 @@
 const path = require("path");
-const parseCSV = require("../utils/parseCSV");
+const parseCSV = require("../../utils/parseCSV");
 
 (async () => {
   try {

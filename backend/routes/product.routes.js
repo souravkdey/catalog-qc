@@ -12,13 +12,15 @@ const {
 
 const router = express.Router();
 
-// Product routes
+// Public routes
 router.get("/", getProducts);
+
+// Protected routes
 router.post("/", authenticate, createProduct);
 router.put("/:id", authenticate, updateProduct);
 router.delete("/:id", authenticate, deleteProduct);
 
-// CSV upload route
+// CSV upload route (protected + upload middleware)
 router.post("/upload", authenticate, upload.single("file"), uploadCSV);
 
 module.exports = router;

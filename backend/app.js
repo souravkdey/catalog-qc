@@ -4,7 +4,6 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 
-// routes
 const authRoutes = require("./routes/auth.routes");
 const productRoutes = require("./routes/product.routes");
 const logRoutes = require("./routes/log.routes");
