@@ -1,3 +1,4 @@
+const validateProduct = require("../utils/validateProduct");
 const Product = require("../models/Product");
 const getChanges = require("../utils/getChanges");
 const createLog = require("../utils/createLog");
@@ -32,7 +33,6 @@ exports.getProducts = async (req, res) => {
 
     const filter = {};
 
-    // default to active if status not provided
     if (status && status.trim() !== "") {
       if (!ALLOWED_STATUS.includes(status)) {
         return res.status(400).json({ message: "Invalid status value" });
@@ -130,10 +130,7 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // soft delete by marking status as archived
-    await Product.findByIdAndUpdate(req.params.id, {
-      status: "archived",
-    });
+    await Product.findByIdAndUpdate(req.params.id, { status: "archived" }); // soft delete
 
     await createLog({
       action: "DELETE",
@@ -160,25 +157,96 @@ exports.uploadCSV = async (req, res) => {
 
     const data = await parseCSV(req.file.path);
 
-    const products = data.map((item) => ({
-      title: item.title,
-      sku: item.sku,
-      price: toNumber(item.price),
-      category: item.category,
-      variants: [
-        {
-          name: item.variantName || "Default",
-          price: toNumber(item.variantPrice, toNumber(item.price)),
-          quantity: toNumber(item.quantity, 0),
-        },
-      ],
-    }));
+    const validProducts = [];
+    const errors = [];
 
-    await Product.insertMany(products);
+    // Preload existing SKUs for performance
+    const existingProducts = await Product.find({}, { sku: 1 });
+    const existingSkuSet = new Set(existingProducts.map((p) => p.sku));
+
+    // Track duplicates inside CSV
+    const csvSkuSet = new Set();
+
+    for (let i = 0; i < data.length; i++) {
+      const item = data[i];
+
+      const product = {
+        name: item.name?.trim() || item.title?.trim(),
+        sku: item.sku?.trim(),
+        price: item.price,
+        category: item.category,
+        variants: [
+          {
+            name: item.variantName?.trim() || "Default",
+            price: item.variantPrice ?? item.price,
+            quantity: item.quantity,
+          },
+        ],
+      };
+
+      const result = validateProduct(product);
+
+      if (!result.isValid) {
+        errors.push({
+          row: i + 2, // assuming header row exists
+          message: result.errors,
+        });
+        continue;
+      }
+
+      // Duplicate check (DB + CSV)
+      if (existingSkuSet.has(product.sku)) {
+        errors.push({
+          row: i + 2,
+          message: ["Duplicate SKU in database"],
+        });
+        continue;
+      }
+
+      if (csvSkuSet.has(product.sku)) {
+        errors.push({
+          row: i + 2,
+          message: ["Duplicate SKU in CSV file"],
+        });
+        continue;
+      }
+
+      csvSkuSet.add(product.sku);
+
+      // Safe numeric conversion
+      const price = Number(product.price);
+      const variantPrice = Number(product.variants[0].price);
+      const quantity = Number(product.variants[0].quantity);
+
+      if (
+        Number.isNaN(price) ||
+        Number.isNaN(variantPrice) ||
+        Number.isNaN(quantity)
+      ) {
+        errors.push({
+          row: i + 2,
+          message: ["Invalid numeric values in price/variant/quantity"],
+        });
+        continue;
+      }
+
+      product.price = price;
+      product.variants[0].price = variantPrice;
+      product.variants[0].quantity = quantity;
+
+      validProducts.push(product);
+    }
+
+    if (validProducts.length > 0) {
+      await Product.insertMany(validProducts);
+    }
 
     res.status(201).json({
-      message: "CSV uploaded successfully",
-      count: products.length,
+      message: "CSV processed",
+      total: data.length,
+      saved: validProducts.length,
+      failed: errors.length,
+      errors,
     });
   } catch (error) {
     console.error("CSV UPLOAD ERROR:", error);

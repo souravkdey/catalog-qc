@@ -1,0 +1,4 @@
+title,sku,price,category,variantName,variantPrice,quantity
+iPhone 13,SKU101,70000,Electronics,Default,70000,10
+iPhone Copy,SKU101,75000,Electronics,Default,75000,5
+Samsung TV,SKU102,40000,Electronics,Default,40000,3
