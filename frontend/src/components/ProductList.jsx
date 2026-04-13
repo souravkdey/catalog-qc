@@ -11,26 +11,40 @@ export default function ProductList() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const filteredProducts = products.filter((product) => {
-    const derivedStatus = product.quantity > 0 ? "in-stock" : "out-of-stock";
+  // ✅ Safe filtering
+  const filteredProducts = Array.isArray(products)
+    ? products.filter((product) => {
+        const derivedStatus =
+          product.quantity > 0 ? "in-stock" : "out-of-stock";
 
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+        const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    const searchMatches =
-      product.title.toLowerCase().includes(normalizedSearch) ||
-      product.sku.toLowerCase().includes(normalizedSearch);
+        const searchMatches =
+          product.title.toLowerCase().includes(normalizedSearch) ||
+          product.sku.toLowerCase().includes(normalizedSearch);
 
-    const statusMatches =
-      selectedStatus === "all" || derivedStatus === selectedStatus;
+        const statusMatches =
+          selectedStatus === "all" || derivedStatus === selectedStatus;
 
-    return searchMatches && statusMatches;
-  });
+        return searchMatches && statusMatches;
+      })
+    : [];
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await axios.get("http://localhost:3001/products");
-        setProducts(res.data);
+
+        console.log("GET /products response:", res.data);
+
+        // ✅ Handle different API shapes safely
+        const productArray = Array.isArray(res.data)
+          ? res.data
+          : res.data.products || res.data.data || [];
+
+        console.log("Final products array:", productArray);
+
+        setProducts(productArray);
       } catch (err) {
         setError(err.message);
       } finally {

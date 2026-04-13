@@ -4,25 +4,29 @@ export default function AddProductForm({ onAdd }) {
   const [sku, setSku] = useState("");
   const [title, setTitle] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState({});
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    setErrors({});
 
     const trimmedSku = sku.trim();
     const trimmedTitle = title.trim();
     const numericQuantity = Number(quantity);
 
     if (!trimmedSku) {
-      return setError("SKU is required");
+      return setErrors({ sku: "SKU is required" });
     }
 
     if (!trimmedTitle) {
-      return setError("Title is required");
+      return setErrors({ title: "Title is required" });
     }
 
     if (numericQuantity < 0 || Number.isNaN(numericQuantity)) {
-      return setError("Quantity must be 0 or greater");
+      return setErrors({
+        quantity: "Quantity must be 0 or greater",
+      });
     }
 
     onAdd({
@@ -34,12 +38,12 @@ export default function AddProductForm({ onAdd }) {
     setSku("");
     setTitle("");
     setQuantity("");
-    setError("");
+    setErrors({});
   };
 
   return (
     <form onSubmit={handleSubmit} className="mb-4 flex flex-col gap-2">
-      {error && <p className="text-red-600">{error}</p>}
+      {errors.sku && <p className="text-red-600">{errors.sku}</p>}
 
       <input
         placeholder="SKU"
@@ -48,12 +52,16 @@ export default function AddProductForm({ onAdd }) {
         className="border p-1"
       />
 
+      {errors.title && <p className="text-red-600">{errors.title}</p>}
+
       <input
         placeholder="Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         className="border p-1"
       />
+
+      {errors.quantity && <p className="text-red-600">{errors.quantity}</p>}
 
       <input
         type="number"
