@@ -5,11 +5,11 @@ const createLog = require("../utils/createLog");
 const parseCSV = require("../utils/parseCSV");
 
 const MAX_LIMIT = 50;
-const ALLOWED_STATUS = ["active", "inactive"];
+const ALLOWED_STATUS = ["active", "inactive", "archived"];
 
 const toNumber = (value, fallback = 0) => {
   const num = Number(value);
-  return isNaN(num) ? fallback : num;
+  return Number.isNaN(num) ? fallback : num;
 };
 
 exports.getProducts = async (query) => {
@@ -18,7 +18,7 @@ exports.getProducts = async (query) => {
   page = parseInt(page, 10);
   limit = parseInt(limit, 10);
 
-  if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
+  if (Number.isNaN(page) || Number.isNaN(limit) || page < 1 || limit < 1) {
     const err = new Error("Invalid pagination values");
     err.status = 400;
     throw err;
@@ -35,6 +35,7 @@ exports.getProducts = async (query) => {
       err.status = 400;
       throw err;
     }
+
     filter.status = status;
   } else {
     filter.status = "active";
@@ -121,10 +122,10 @@ exports.uploadCSV = async (filePath) => {
     const item = data[i];
 
     const product = {
-      name: item.name?.trim() || item.title?.trim(),
+      title: item.title?.trim() || item.name?.trim(),
       sku: item.sku?.trim(),
       price: item.price,
-      category: item.category,
+      category: item.category?.trim(),
       variants: [
         {
           name: item.variantName?.trim() || "Default",
@@ -162,9 +163,9 @@ exports.uploadCSV = async (filePath) => {
 
     csvSkuSet.add(product.sku);
 
-    const price = Number(product.price);
-    const variantPrice = Number(product.variants[0].price);
-    const quantity = Number(product.variants[0].quantity);
+    const price = toNumber(product.price, NaN);
+    const variantPrice = toNumber(product.variants[0].price, NaN);
+    const quantity = toNumber(product.variants[0].quantity, NaN);
 
     if (
       Number.isNaN(price) ||

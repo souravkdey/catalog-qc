@@ -5,11 +5,11 @@ const validateProduct = (product) => {
     return { isValid: false, errors: ["Product must be a valid object"] };
   }
 
-  const { name, price, sku } = product;
+  const { title, price, sku } = product;
 
-  // Validate name
-  if (!name || typeof name !== "string" || name.trim() === "") {
-    errors.push("Name is required and must be a non-empty string");
+  // Validate title
+  if (!title || typeof title !== "string" || title.trim() === "") {
+    errors.push("Title is required and must be a non-empty string");
   }
 
   // Validate price

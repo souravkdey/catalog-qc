@@ -1,4 +1,5 @@
 const express = require("express");
+
 const authenticate = require("../middleware/auth");
 const upload = require("../middleware/uploadMiddleware");
 
@@ -8,19 +9,23 @@ const {
   updateProduct,
   deleteProduct,
   uploadCSV,
+  exportErrorsJSON,
 } = require("../controllers/product.controller");
 
 const router = express.Router();
 
-// Public routes
+// public route
 router.get("/", getProducts);
 
-// Protected routes
+// protected routes
 router.post("/", authenticate, createProduct);
 router.put("/:id", authenticate, updateProduct);
 router.delete("/:id", authenticate, deleteProduct);
 
-// CSV upload route (protected + upload middleware)
+// csv upload route
 router.post("/upload", authenticate, upload.single("file"), uploadCSV);
+
+// export last import errors
+router.get("/errors/export/json", authenticate, exportErrorsJSON);
 
 module.exports = router;

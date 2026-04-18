@@ -1,10 +1,14 @@
 const productService = require("../services/product.service");
 
+let lastImportErrors = [];
+
+// shared 500 error handler
 const handleServerError = (res, error, message = "Unknown Error") => {
   console.error(error);
   res.status(500).json({ message });
 };
 
+// get products with filters / pagination
 exports.getProducts = async (req, res) => {
   try {
     const result = await productService.getProducts(req.query);
@@ -14,6 +18,7 @@ exports.getProducts = async (req, res) => {
   }
 };
 
+// create new product
 exports.createProduct = async (req, res) => {
   try {
     const product = await productService.createProduct(req.body);
@@ -31,6 +36,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
+// update existing product
 exports.updateProduct = async (req, res) => {
   try {
     const updatedProduct = await productService.updateProduct(
@@ -56,6 +62,7 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
+// delete product
 exports.deleteProduct = async (req, res) => {
   try {
     await productService.deleteProduct(req.params.id);
@@ -69,6 +76,7 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
+// upload and process csv file
 exports.uploadCSV = async (req, res) => {
   try {
     if (!req.file) {
@@ -77,9 +85,28 @@ exports.uploadCSV = async (req, res) => {
 
     const result = await productService.uploadCSV(req.file.path);
 
+    // store latest import errors for export route
+    lastImportErrors = result.errors || [];
+
     res.status(201).json(result);
   } catch (error) {
     console.error("CSV UPLOAD ERROR:", error);
     handleServerError(res, error, "CSV upload failed");
   }
+};
+
+// export latest qc errors as json
+exports.exportErrorsJSON = (req, res) => {
+  if (lastImportErrors.length === 0) {
+    return res.status(200).json({
+      message: "No QC errors available for export yet",
+      count: 0,
+      errors: [],
+    });
+  }
+
+  res.status(200).json({
+    count: lastImportErrors.length,
+    errors: lastImportErrors,
+  });
 };
