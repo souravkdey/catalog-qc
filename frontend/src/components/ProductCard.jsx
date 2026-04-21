@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export default function ProductCard({ product, onEdit, onDelete }) {
+export default function ProductCard({ product, onEdit, onDelete, isAdmin }) {
   const [editMode, setEditMode] = useState(false);
   const [editTitle, setEditTitle] = useState(product.title);
   const [editQuantity, setEditQuantity] = useState(product.quantity);
@@ -91,21 +91,23 @@ export default function ProductCard({ product, onEdit, onDelete }) {
             {isOutOfStock ? "Out of Stock" : product.quantity}
           </p>
 
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={() => setEditMode(true)}
-              className="bg-yellow-300 px-2 py-1 rounded"
-            >
-              Edit
-            </button>
+          {isAdmin && (
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => setEditMode(true)}
+                className="bg-yellow-300 px-2 py-1 rounded"
+              >
+                Edit
+              </button>
 
-            <button
-              onClick={() => onDelete(product.id)}
-              className="bg-red-500 text-white px-2 py-1 rounded"
-            >
-              Delete
-            </button>
-          </div>
+              <button
+                onClick={() => onDelete(product.id)}
+                className="bg-red-500 text-white px-2 py-1 rounded"
+              >
+                Delete
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -10,6 +10,7 @@ export default function ProductList() {
   const [flash, setFlash] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [user] = useState({ username: "admin", role: "user" });
 
   // ✅ Safe filtering
   const filteredProducts = Array.isArray(products)
@@ -135,7 +136,7 @@ export default function ProductList() {
 
       <h2 className="text-xl font-bold mb-2">Product List</h2>
 
-      <AddProductForm onAdd={handleAddProduct} />
+      {user.role === "admin" && <AddProductForm onAdd={handleAddProduct} />}
 
       {filteredProducts.length === 0 ? (
         <p>No products found</p>
@@ -147,6 +148,7 @@ export default function ProductList() {
               product={product}
               onEdit={handleEditProduct}
               onDelete={handleDeleteProduct}
+              isAdmin={user.role === "admin"}
             />
           ))}
         </div>

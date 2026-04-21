@@ -21,5 +21,5 @@ exports.login = (req, res) => {
 
   const token = generateToken();
 
-  res.json({ token });
+  res.json({ token, user: { username, role: "admin" } });
 };
