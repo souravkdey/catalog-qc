@@ -1,0 +1,59 @@
+body {
+  background-color: #f9fafb;
+}
+
+.product-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* responsive grid for product cards */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+
+  justify-items: center;
+}
+
+/* filter controls layout */
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  margin-bottom: 16px;
+}
+
+/* shared styles for form controls */
+.input,
+.select {
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* highlight active input */
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+/* mobile adjustments */
+@media (max-width: 500px) {
+  .product-grid {
+    grid-template-columns: 1fr; /* stack cards */
+  }
+
+  .filters {
+    flex-direction: column; /* stack filters vertically */
+  }
+
+  .card-actions {
+    justify-content: center; /* center buttons on small screens */
+  }
+}

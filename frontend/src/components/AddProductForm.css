@@ -1,0 +1,45 @@
+.form-card {
+  max-width: 500px;
+  margin: 0 auto 24px; /* center + bottom spacing */
+  padding: 16px;
+
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+
+  /* same card style as product-card for visual consistency */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.form-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* stack form fields vertically */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* group label + input together */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* error message styling */
+.form-error {
+  font-size: 0.8rem;
+  color: #dc2626;
+}
+
+/* align submit/reset buttons to the right */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}

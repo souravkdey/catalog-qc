@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "./AddProductForm.css";
 
 export default function AddProductForm({ onAdd }) {
   const [sku, setSku] = useState("");
@@ -42,42 +43,51 @@ export default function AddProductForm({ onAdd }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4 flex flex-col gap-2">
-      {errors.sku && <p className="text-red-600">{errors.sku}</p>}
+    <div className="form-card">
+      <h3 className="form-title">Add Product</h3>
 
-      <input
-        placeholder="SKU"
-        value={sku}
-        onChange={(e) => setSku(e.target.value)}
-        className="border p-1"
-      />
+      <form onSubmit={handleSubmit} className="form">
+        {/* SKU */}
+        <div className="form-group">
+          {errors.sku && <p className="form-error">{errors.sku}</p>}
+          <input
+            placeholder="SKU"
+            value={sku}
+            onChange={(e) => setSku(e.target.value)}
+            className="input"
+          />
+        </div>
 
-      {errors.title && <p className="text-red-600">{errors.title}</p>}
+        {/* Title */}
+        <div className="form-group">
+          {errors.title && <p className="form-error">{errors.title}</p>}
+          <input
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="input"
+          />
+        </div>
 
-      <input
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="border p-1"
-      />
+        {/* Quantity */}
+        <div className="form-group">
+          {errors.quantity && <p className="form-error">{errors.quantity}</p>}
+          <input
+            type="number"
+            min={0}
+            placeholder="Quantity"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            className="input"
+          />
+        </div>
 
-      {errors.quantity && <p className="text-red-600">{errors.quantity}</p>}
-
-      <input
-        type="number"
-        min={0}
-        placeholder="Quantity"
-        value={quantity}
-        onChange={(e) => setQuantity(e.target.value)}
-        className="border p-1"
-      />
-
-      <button
-        type="submit"
-        className="bg-blue-500 text-white px-2 py-1 rounded"
-      >
-        Add Product
-      </button>
-    </form>
+        <div className="form-actions">
+          <button type="submit" className="btn btn-primary">
+            Add Product
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

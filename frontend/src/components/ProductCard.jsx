@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./ProductCard.css";
 
 export default function ProductCard({ product, onEdit, onDelete, isAdmin }) {
   const [editMode, setEditMode] = useState(false);
@@ -35,44 +36,41 @@ export default function ProductCard({ product, onEdit, onDelete, isAdmin }) {
   };
 
   return (
-    <div
-      className={`rounded p-4 shadow-md ${isOutOfStock ? "opacity-50" : ""}`}
-    >
+    <div className={`product-card ${isOutOfStock ? "out-of-stock" : ""}`}>
       {editMode ? (
         <>
-          <input
-            type="text"
-            value={editSku}
-            onChange={(e) => setEditSku(e.target.value)}
-            className="border p-1 mb-1 w-full"
-          />
+          <div className="card-content">
+            <input
+              type="text"
+              value={editSku}
+              onChange={(e) => setEditSku(e.target.value)}
+              className="input"
+            />
 
-          <input
-            type="text"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            className="border p-1 mb-1 w-full"
-          />
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="input"
+            />
 
-          <input
-            type="number"
-            min={0}
-            value={editQuantity}
-            onChange={(e) => setEditQuantity(e.target.value)}
-            className="border p-1 mb-2 w-full"
-          />
+            <input
+              type="number"
+              min={0}
+              value={editQuantity}
+              onChange={(e) => setEditQuantity(e.target.value)}
+              className="input"
+            />
+          </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              className="bg-blue-500 text-white px-2 py-1 rounded"
-            >
+          <div className="card-actions">
+            <button onClick={handleSave} className="btn btn-primary">
               Save
             </button>
 
             <button
               onClick={() => setEditMode(false)}
-              className="bg-gray-300 px-2 py-1 rounded"
+              className="btn btn-secondary"
             >
               Cancel
             </button>
@@ -80,29 +78,31 @@ export default function ProductCard({ product, onEdit, onDelete, isAdmin }) {
         </>
       ) : (
         <>
-          <h3>{product.title}</h3>
+          <div className="card-content">
+            <h3 className="card-title">{product.title}</h3>
 
-          <p>
-            <strong>SKU:</strong> {product.sku}
-          </p>
+            <p className="card-text">
+              <strong>SKU:</strong> {product.sku}
+            </p>
 
-          <p>
-            <strong>Quantity:</strong>{" "}
-            {isOutOfStock ? "Out of Stock" : product.quantity}
-          </p>
+            <p className="card-text">
+              <strong>Quantity:</strong>{" "}
+              {isOutOfStock ? "Out of Stock" : product.quantity}
+            </p>
+          </div>
 
           {isAdmin && (
-            <div className="flex gap-2 mt-2">
+            <div className="card-actions">
               <button
                 onClick={() => setEditMode(true)}
-                className="bg-yellow-300 px-2 py-1 rounded"
+                className="btn btn-edit"
               >
                 Edit
               </button>
 
               <button
                 onClick={() => onDelete(product.id)}
-                className="bg-red-500 text-white px-2 py-1 rounded"
+                className="btn btn-delete"
               >
                 Delete
               </button>

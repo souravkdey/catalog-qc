@@ -1,0 +1,110 @@
+.product-card {
+  max-width: 350px;
+  margin: 0 auto;
+  padding: 16px;
+
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+
+  /* subtle elevation for card UI */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.product-card:hover {
+  /* slight lift interaction */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* visually distinguish unavailable products */
+.product-card.out-of-stock {
+  opacity: 0.6;
+  filter: grayscale(0.4);
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #111;
+}
+
+.card-text {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* base button styles */
+.btn {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+/* primary action */
+.btn-primary {
+  background-color: #2563eb;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #1e4ed8;
+}
+
+/* secondary action */
+.btn-secondary {
+  background-color: #e5e7eb;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background-color: #d1d5db;
+}
+
+/* edit action */
+.btn-edit {
+  background-color: #facc15;
+  color: #000;
+}
+
+.btn-edit:hover {
+  background-color: #eab308;
+}
+
+/* destructive action */
+.btn-delete {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.btn-delete:hover {
+  background-color: #dc2626;
+}
+
+/* right-align action buttons */
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}

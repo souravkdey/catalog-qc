@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import AddProductForm from "./AddProductForm";
 import ProductCard from "./ProductCard";
+import "./ProductList.css";
 
 export default function ProductList() {
   const [products, setProducts] = useState([]);
@@ -10,7 +11,7 @@ export default function ProductList() {
   const [flash, setFlash] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [user] = useState({ username: "admin", role: "user" });
+  const [user] = useState({ username: "admin", role: "admin" });
 
   // ✅ Safe filtering
   const filteredProducts = Array.isArray(products)
@@ -107,26 +108,22 @@ export default function ProductList() {
   if (error) return <h2>{error}</h2>;
 
   return (
-    <div className="p-4">
-      {flash && (
-        <div className="bg-green-200 text-green-800 p-2 rounded mb-2">
-          {flash}
-        </div>
-      )}
+    <div className="product-list">
+      {flash && <div className="flash-message">{flash}</div>}
 
-      <div className="flex gap-2 mb-4">
+      <div className="filters">
         <input
           type="text"
           placeholder="Search by title or SKU..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="border p-1"
+          className="input"
         />
 
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
-          className="border p-1"
+          className="select"
         >
           <option value="all">All</option>
           <option value="in-stock">In Stock</option>
@@ -134,14 +131,14 @@ export default function ProductList() {
         </select>
       </div>
 
-      <h2 className="text-xl font-bold mb-2">Product List</h2>
+      <h2 className="section-title">Product List</h2>
 
       {user.role === "admin" && <AddProductForm onAdd={handleAddProduct} />}
 
       {filteredProducts.length === 0 ? (
         <p>No products found</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="product-grid">
           {filteredProducts.map((product) => (
             <ProductCard
               key={product.id}
